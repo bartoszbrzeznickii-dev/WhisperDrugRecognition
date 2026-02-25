@@ -1,0 +1,34 @@
+=============================================================================
+DOKUMENTACJA INTEGRACJI MODELU
+=============================================================================
+
+1. WYBÓR WERSJI MODELU
+Do integracji w aplikacji docelowej (produkcyjnej) należy
+używać zoptymalizowanej wersji modelu z katalogu z przyrostkiem "_CT2".
+Wymaga ona biblioteki "faster-whisper".
+
+2. PRZYGOTOWANIE DANYCH AUDIO (PRE-PROCESSING)
+Dźwięk przesyłany do modelu musi spełniać następujące warunki:
+- Próbkowanie (Sample Rate): 16 000 Hz
+- Kanały: Mono (jedna ścieżka dźwiękowa)
+- Typ danych: Tablica float32 (np. numpy.ndarray)
+
+3. PARAMETRY GENERACJI TEKSTU
+Wywołanie transkrypcji musi wymuszać następujące parametry stałe:
+- language: "pl"
+- task: "transcribe"
+- max_new_tokens: 256
+
+4. ZABEZPIECZENIE PRZED HALUCYNACJAMI (WYMAGANE)
+Aby zapobiec "zapętlaniu" się generowanego tekstu, aplikacja odpytująca
+model musi zaimplementować tzw. pętlę Fallback (kaskadę temperatur):
+
+- Zbiór temperatur: [0.0, 0.2, 0.4, 0.6, 0.8, 1.0]
+- Mechanizm: Aplikacja pobiera wynik dla pierwszej temperatury i sprawdza
+  jego współczynnik kompresji algorytmem Zlib (stosunek rozmiaru danych
+  nieskompresowanych do skompresowanych).
+- Warunek stopu: Jeśli współczynnik kompresji <= 2.4, tekst jest poprawny
+  (pętla się kończy). Jeśli jest wyższy (>2.4), wynik należy odrzucić i
+  ponowić odpytanie z kolejną, wyższą temperaturą z listy.
+
+=============================================================================
